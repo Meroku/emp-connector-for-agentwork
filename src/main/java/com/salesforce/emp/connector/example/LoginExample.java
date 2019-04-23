@@ -12,6 +12,9 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -119,6 +122,8 @@ public class LoginExample {
 
             String PendingServiceRoutingId = result.substring(result.lastIndexOf("\"Id\":\"") + 6, result.lastIndexOf("\",\"LastDeclinedAgentSession\""));
 
+            String QueueId = result.substring(result.lastIndexOf("\"QueueId\"") + 11, result.lastIndexOf("\",\"Id\""));
+
             listOfPSR.add(ServiceChannelId);
             listOfPSR.add(WorkItemId);
             listOfPSR.add(PendingServiceRoutingId);
@@ -133,6 +138,12 @@ public class LoginExample {
             final CloseableHttpClient httpclient = HttpClients.createDefault();
 
             if(listOfPSR.size() != 0) {
+
+                DatabaseRecord record = new DatabaseRecord(listOfPSR.get(0), listOfPSR.get(1), listOfPSR.get(2), QueueId, "New");
+                record.connectToDB();
+                record.createRecord();
+                record.closeConnection();
+
                 System.out.println("ROUTING TO AGENT");
 
                 final URIBuilder builder = new URIBuilder(instanceUrl);
@@ -145,7 +156,6 @@ public class LoginExample {
                 post.setHeader("Authorization", "Bearer " + accessToken);
                 post.setHeader("Content-Type", "application/json");
 
-
                 //final HttpGet get = new HttpGet(builder.build());
                 //get.setHeader("Authorization", "Bearer " + accessToken);
 
@@ -153,7 +163,6 @@ public class LoginExample {
 
                 //final HttpResponse queryResponse = httpclient.execute(get);
                 final HttpResponse queryResponse = httpclient.execute(post);
-
 
                 final JsonNode queryResults = mapper.readValue(queryResponse.getEntity().getContent(), JsonNode.class);
 
@@ -165,5 +174,6 @@ public class LoginExample {
 
         return result;
     }
+
 
 }

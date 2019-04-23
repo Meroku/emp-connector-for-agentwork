@@ -24,6 +24,7 @@ import org.eclipse.jetty.util.ajax.JSON;
  */
 public class BearerTokenExample {
     public static void main(String[] argv) throws Exception {
+        System.out.println(argv[1]);
         if (argv.length < 2 || argv.length > 4) {
             System.err.println("Usage: BearerTokenExample url token topic [replayFrom]");
             System.exit(1);

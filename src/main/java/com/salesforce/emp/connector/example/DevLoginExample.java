@@ -148,7 +148,7 @@ public class DevLoginExample {
                 final URIBuilder builder = new URIBuilder(instanceUrl);
                 builder.setPath("/services/data/v43.0/sobjects/AgentWork");
 
-                String json = "{\"ServiceChannelId\": \"" + listOfPSR.get(0) + "\", \"WorkItemId\": \"" + listOfPSR.get(1) + "\", \"UserId\": \"0052C000000E1mo\", \"PendingServiceRoutingId\": \"" + listOfPSR.get(2) + "\"}";
+                String json = "{\"ServiceChannelId\": \"" + listOfPSR.get(0) + "\", \"WorkItemId\": \"" + listOfPSR.get(1) + "\", \"UserId\": \"0052C000001Dr9W\", \"PendingServiceRoutingId\": \"" + listOfPSR.get(2) + "\"}";
                 StringEntity entity = new StringEntity(json);
                 final HttpPost post = new HttpPost(builder.build());
                 post.setEntity(entity);

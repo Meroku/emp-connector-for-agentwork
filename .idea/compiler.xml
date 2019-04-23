@@ -7,6 +7,7 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="emp-connector" />
+        <module name="emp-connector-for-agentwork" />
       </profile>
     </annotationProcessing>
   </component>
