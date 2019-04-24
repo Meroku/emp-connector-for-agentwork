@@ -36,8 +36,8 @@ public class DatabaseRecord {
 
         try {
             connection = DriverManager.getConnection("jdbc:postgresql://ec2-54-197-239-115.compute-1.amazonaws.com:5432/d3mcfdu4dfhcvh",
-                                                    "jpppxvrfqdrxyg", //username
-                                                    "1b0d686ea83764e2020f79a842722f55da51bf487bf49e36996cdf85ac893508"); //password
+                                                    "", //username
+                                                    ""); //password
             statement = connection.createStatement();
 
             //System.out.println("Connection successful!");
