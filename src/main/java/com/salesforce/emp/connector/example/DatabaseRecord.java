@@ -11,6 +11,7 @@ public class DatabaseRecord {
     private String WorkItemId;
     private String PendingServiceRoutingId;
     private String QueueId;
+    private String UserId = "";
     private String Status;
 
     public Connection connection = null;
@@ -35,11 +36,11 @@ public class DatabaseRecord {
 
         try {
             connection = DriverManager.getConnection("jdbc:postgresql://ec2-54-197-239-115.compute-1.amazonaws.com:5432/d3mcfdu4dfhcvh",
-                                                    "", //username
-                                                    ""); //password
+                                                    "jpppxvrfqdrxyg", //username
+                                                    "1b0d686ea83764e2020f79a842722f55da51bf487bf49e36996cdf85ac893508"); //password
             statement = connection.createStatement();
 
-            System.out.println("Connection successful!");
+            //System.out.println("Connection successful!");
             //connection.close();                                                                                         // delete this string!
             //statement.close();                                                                                          //delete this string!
         } catch (SQLException e) {
@@ -50,12 +51,12 @@ public class DatabaseRecord {
     public void createRecord() {
 
         String insertTableSQL = "INSERT INTO routinginformation"
-                + "(pendingservicerouting, servicechanelid, workitemid, queueid, status) " + "VALUES"
-                + "('" + PendingServiceRoutingId + "','" + ServiceChannelId + "','" + WorkItemId + "', '" + QueueId + "', '" + Status + "') ";
+                + "(pendingservicerouting, servicechanelid, workitemid, queueid, userid, status) " + "VALUES"
+                + "('" + PendingServiceRoutingId + "','" + ServiceChannelId + "','" + WorkItemId + "', '" + QueueId + "', '" + UserId + "', '" + Status + "') ";
 
         try {
             statement.executeUpdate(insertTableSQL);
-            System.out.println("Record created successfully!");
+            //System.out.println("Record created successfully!");
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -63,14 +64,27 @@ public class DatabaseRecord {
 
     }
 
+    public void addUserId(String UserId) {
+        String updateTableSQL = "UPDATE routinginformation SET userid = '" + UserId + "' WHERE"
+                + " pendingservicerouting = '" + PendingServiceRoutingId + "' AND servicechanelid = '" + ServiceChannelId + "' AND workitemid = '" + WorkItemId + "' AND queueid = '" + QueueId + "' AND status = '" + Status + "'";
+
+        try {
+            statement.execute(updateTableSQL);
+            this.UserId = UserId;
+            //System.out.println("Record updated successfully!");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void updateRecordStatus(String Status) {
         String updateTableSQL = "UPDATE routinginformation SET status = '" + Status + "' WHERE"
-        + " pendingservicerouting = " + PendingServiceRoutingId + " AND servicechanelid = " + ServiceChannelId + " AND workitemid = " + WorkItemId + " AND queueid = " + QueueId + "";
+        + " pendingservicerouting = '" + PendingServiceRoutingId + "' AND servicechanelid = '" + ServiceChannelId + "' AND workitemid = '" + WorkItemId + "' AND userid = '" + UserId + "' AND queueid = '" + QueueId + "'";
 
         try {
             statement.execute(updateTableSQL);
             this.Status = Status;
-            System.out.println("Record updated successfully!");
+            //System.out.println("Record updated successfully!");
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -84,7 +98,7 @@ public class DatabaseRecord {
             if (statement != null) {
                 statement.close();
             }
-            System.out.println("Connection closed successfully!");
+            //System.out.println("Connection closed successfully!");
         } catch (SQLException e) {
             e.printStackTrace();
         }

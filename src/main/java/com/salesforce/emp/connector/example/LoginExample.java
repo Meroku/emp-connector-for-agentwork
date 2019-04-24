@@ -9,6 +9,7 @@ package com.salesforce.emp.connector.example;
 import static com.salesforce.emp.connector.LoginHelper.login;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -23,6 +24,7 @@ import java.util.function.Consumer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
@@ -30,6 +32,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.HttpResponse;
 
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.eclipse.jetty.util.ajax.JSON;
 
@@ -104,14 +107,10 @@ public class LoginExample {
         // Clear our list to make sure that the AgentWork will be created only in case of creation PSR
         listOfPSR.clear();
 
-
         if(type.equals("created")) {
-
             IsPushed = result.substring(result.lastIndexOf("\"IsPushed\":") + 11, result.lastIndexOf("}}"));
-
             //System.out.println("IF VALUES: " + type + " " + IsPushed);
         }
-
 
         //Check that our PSR was transferred to agent
         if(type.equals("created") && IsPushed.equals("false")) {
@@ -127,46 +126,16 @@ public class LoginExample {
             listOfPSR.add(ServiceChannelId);
             listOfPSR.add(WorkItemId);
             listOfPSR.add(PendingServiceRoutingId);
+            listOfPSR.add(QueueId);
 
             //System.out.println("FIELDS FOR AgentWork OBJECT: " + ServiceChannelId + ", " + WorkItemId + ", " + PendingServiceRoutingId);
 
-            final ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
-
-            final String accessToken = params.bearerToken();
-            final String instanceUrl = params.endpoint().toString();
-
-            final CloseableHttpClient httpclient = HttpClients.createDefault();
 
             if(listOfPSR.size() != 0) {
 
-                DatabaseRecord record = new DatabaseRecord(listOfPSR.get(0), listOfPSR.get(1), listOfPSR.get(2), QueueId, "New");
-                record.connectToDB();
-                record.createRecord();
-                record.closeConnection();
-
-                System.out.println("ROUTING TO AGENT");
-
-                final URIBuilder builder = new URIBuilder(instanceUrl);
-                builder.setPath("/services/data/v43.0/sobjects/AgentWork");
-
-                String json = "{\"ServiceChannelId\": \"" + listOfPSR.get(0) + "\", \"WorkItemId\": \"" + listOfPSR.get(1) + "\", \"UserId\": \"0056F000009wCOmQAM\", \"PendingServiceRoutingId\": \"" + listOfPSR.get(2) + "\"}";
-                StringEntity entity = new StringEntity(json);
-                final HttpPost post = new HttpPost(builder.build());
-                post.setEntity(entity);
-                post.setHeader("Authorization", "Bearer " + accessToken);
-                post.setHeader("Content-Type", "application/json");
-
-                //final HttpGet get = new HttpGet(builder.build());
-                //get.setHeader("Authorization", "Bearer " + accessToken);
-
-                System.out.println(post);
-
-                //final HttpResponse queryResponse = httpclient.execute(get);
-                final HttpResponse queryResponse = httpclient.execute(post);
-
-                final JsonNode queryResults = mapper.readValue(queryResponse.getEntity().getContent(), JsonNode.class);
-
-                System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(queryResults));
+                final String accessToken = params.bearerToken();
+                final String instanceUrl = params.endpoint().toString();
+                roteToAgent(accessToken, instanceUrl);
 
             }
 
@@ -175,5 +144,60 @@ public class LoginExample {
         return result;
     }
 
+    public static void roteToAgent(String accessToken, String instanceUrl) throws URISyntaxException, IOException {
 
+        final ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+
+
+
+        final CloseableHttpClient httpclient = HttpClients.createDefault();
+
+        DatabaseRecord record = new DatabaseRecord(listOfPSR.get(0), listOfPSR.get(1), listOfPSR.get(2), listOfPSR.get(3), "SendToAgent");
+        record.connectToDB();
+        record.createRecord();
+
+        sendRequestToInin(accessToken, instanceUrl);
+
+        record.addUserId("0056F000009wCOmQAM");
+        record.closeConnection();
+
+        System.out.println("ROUTING TO AGENT");
+
+        final URIBuilder builder = new URIBuilder(instanceUrl);
+        builder.setPath("/services/data/v43.0/sobjects/AgentWork");
+
+        String json = "{\"ServiceChannelId\": \"" + listOfPSR.get(0) + "\", \"WorkItemId\": \"" + listOfPSR.get(1) + "\", \"UserId\": \"0056F000009wCOmQAM\", \"PendingServiceRoutingId\": \"" + listOfPSR.get(2) + "\"}";
+        StringEntity entity = new StringEntity(json);
+        final HttpPost post = new HttpPost(builder.build());
+        post.setEntity(entity);
+        post.setHeader("Authorization", "Bearer " + accessToken);
+        post.setHeader("Content-Type", "application/json");
+
+        //final HttpGet get = new HttpGet(builder.build());
+        //get.setHeader("Authorization", "Bearer " + accessToken);
+
+        System.out.println(post);
+
+        //final HttpResponse queryResponse = httpclient.execute(get);
+        final HttpResponse queryResponse = httpclient.execute(post);
+
+        final JsonNode queryResults = mapper.readValue(queryResponse.getEntity().getContent(), JsonNode.class);
+
+        //System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(queryResults));
+
+    }
+
+
+    public static void sendRequestToInin(String accessToken, String instanceUrl) throws IOException, URISyntaxException {
+
+        HttpClient httpClient = HttpClientBuilder.create().build();
+        HttpPost request = new HttpPost("https://availability-2.marketlinc.com/WCFService1/CheckAgentAvailability");
+        StringEntity params =new StringEntity("{\"workgroupName\":\"MalwarebytesNewDEV_Attendant\",\"skills\":\"CN-MalwarebytesNewDEV\",\"agentType\":\"AT-Attendant\"} ");
+        request.addHeader("Content-Type", "application/json");
+        request.setEntity(params);
+        HttpResponse response = httpClient.execute(request);
+        System.out.println(request);
+        System.out.println(response.getStatusLine().getReasonPhrase());
+
+    }
 }
