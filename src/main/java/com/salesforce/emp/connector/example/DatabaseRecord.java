@@ -1,9 +1,6 @@
 package com.salesforce.emp.connector.example;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 
 public class DatabaseRecord {
 
@@ -12,6 +9,7 @@ public class DatabaseRecord {
     private String PendingServiceRoutingId;
     private String QueueId;
     private String UserId = "";
+    private String reqest_id = "";
     private String Status;
 
     public Connection connection = null;
@@ -50,8 +48,8 @@ public class DatabaseRecord {
 
     public void createRecord() {
 
-        String insertTableSQL = "INSERT INTO routinginformation"
-                + "(pendingservicerouting, servicechanelid, workitemid, queueid, userid, status) " + "VALUES"
+        String insertTableSQL = "INSERT INTO routes"
+                + "(pendingservicerouting, servicechanelid, workitemid, queueid, agent_id, status) " + "VALUES"
                 + "('" + PendingServiceRoutingId + "','" + ServiceChannelId + "','" + WorkItemId + "', '" + QueueId + "', '" + UserId + "', '" + Status + "') ";
 
         try {
@@ -65,7 +63,7 @@ public class DatabaseRecord {
     }
 
     public void addUserId(String UserId) {
-        String updateTableSQL = "UPDATE routinginformation SET userid = '" + UserId + "' WHERE"
+        String updateTableSQL = "UPDATE routes SET agent_id = '" + UserId + "' WHERE"
                 + " pendingservicerouting = '" + PendingServiceRoutingId + "' AND servicechanelid = '" + ServiceChannelId + "' AND workitemid = '" + WorkItemId + "' AND queueid = '" + QueueId + "' AND status = '" + Status + "'";
 
         try {
@@ -77,9 +75,37 @@ public class DatabaseRecord {
         }
     }
 
+    public void addRequestId(String reqest_id) {
+        String updateTableSQL = "UPDATE routes SET request_id = '" + reqest_id + "' WHERE"
+                + " pendingservicerouting = '" + PendingServiceRoutingId + "' AND servicechanelid = '" + ServiceChannelId + "' AND workitemid = '" + WorkItemId + "' AND queueid = '" + QueueId + "' AND status = '" + Status + "'";
+
+        try {
+            statement.execute(updateTableSQL);
+            this.reqest_id = reqest_id;
+            //System.out.println("Record updated successfully!");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public String getUserId() {
+        String selectTableSQL = "SELECT agent_id from routes";
+        try {
+            ResultSet rs = statement.executeQuery(selectTableSQL);
+            while (rs.next()) {
+                String agent_id = rs.getString("agent_id");
+                this.UserId = agent_id;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return UserId;
+    }
+
     public void updateRecordStatus(String Status) {
-        String updateTableSQL = "UPDATE routinginformation SET status = '" + Status + "' WHERE"
-        + " pendingservicerouting = '" + PendingServiceRoutingId + "' AND servicechanelid = '" + ServiceChannelId + "' AND workitemid = '" + WorkItemId + "' AND userid = '" + UserId + "' AND queueid = '" + QueueId + "'";
+        String updateTableSQL = "UPDATE routes SET status = '" + Status + "' WHERE"
+        + " pendingservicerouting = '" + PendingServiceRoutingId + "' AND servicechanelid = '" + ServiceChannelId + "' AND workitemid = '" + WorkItemId + "' AND agent_id = '" + UserId + "' AND queueid = '" + QueueId + "'";
 
         try {
             statement.execute(updateTableSQL);

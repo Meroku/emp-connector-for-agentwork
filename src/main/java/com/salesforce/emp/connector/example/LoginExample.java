@@ -13,6 +13,8 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -24,6 +26,9 @@ import java.util.function.Consumer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import org.apache.commons.codec.Charsets;
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -34,6 +39,7 @@ import org.apache.http.HttpResponse;
 
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.eclipse.jetty.util.ajax.JSON;
 
 import com.salesforce.emp.connector.BayeuxParameters;
@@ -144,7 +150,7 @@ public class LoginExample {
         return result;
     }
 
-    public static void roteToAgent(String accessToken, String instanceUrl) throws URISyntaxException, IOException {
+    private static void roteToAgent(String accessToken, String instanceUrl) throws URISyntaxException, IOException {
 
         final ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
 
@@ -156,9 +162,22 @@ public class LoginExample {
         record.connectToDB();
         record.createRecord();
 
-        sendRequestToInin(accessToken, instanceUrl);
+        record.addRequestId(sendRequestToInin());
+        String UserId = "";
+        Boolean m = true;
+        while (m) {
+            UserId = record.getUserId();
+            if(UserId != "" && UserId.length() == 18) {
+                m = false;
+            } else {
+                try {
+                    TimeUnit.SECONDS.sleep(1);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
 
-        record.addUserId("0056F000009wCOmQAM");
         record.closeConnection();
 
         System.out.println("ROUTING TO AGENT");
@@ -166,7 +185,7 @@ public class LoginExample {
         final URIBuilder builder = new URIBuilder(instanceUrl);
         builder.setPath("/services/data/v43.0/sobjects/AgentWork");
 
-        String json = "{\"ServiceChannelId\": \"" + listOfPSR.get(0) + "\", \"WorkItemId\": \"" + listOfPSR.get(1) + "\", \"UserId\": \"0056F000009wCOmQAM\", \"PendingServiceRoutingId\": \"" + listOfPSR.get(2) + "\"}";
+        String json = "{\"ServiceChannelId\": \"" + listOfPSR.get(0) + "\", \"WorkItemId\": \"" + listOfPSR.get(1) + "\", \"UserId\": \"" + UserId + "\", \"PendingServiceRoutingId\": \"" + listOfPSR.get(2) + "\"}";
         StringEntity entity = new StringEntity(json);
         final HttpPost post = new HttpPost(builder.build());
         post.setEntity(entity);
@@ -188,16 +207,32 @@ public class LoginExample {
     }
 
 
-    public static void sendRequestToInin(String accessToken, String instanceUrl) throws IOException, URISyntaxException {
+    private static String sendRequestToInin() throws IOException, URISyntaxException {
 
         HttpClient httpClient = HttpClientBuilder.create().build();
-        HttpPost request = new HttpPost("https://availability-2.marketlinc.com/WCFService1/CheckAgentAvailability");
-        StringEntity params =new StringEntity("{\"workgroupName\":\"MalwarebytesNewDEV_Attendant\",\"skills\":\"CN-MalwarebytesNewDEV\",\"agentType\":\"AT-Attendant\"} ");
+        HttpPost request = new HttpPost("https://availability-2.marketlinc.com/WCFService1/CreateGenericObject");
+        StringEntity params =new StringEntity("{\n" +
+                "\t\"chatID\": \"1234-4321\",\n" +
+                "\t\"workgroupName\":\"MalwarebytesNewDEV_Attendant\",\n" +
+                "\t\"skills\":\"CN-MalwarebytesNewDEV\",\n" +
+                "\t\"agentType\":\"AT-Attendant\"\n" +
+                "} ");
         request.addHeader("Content-Type", "application/json");
         request.setEntity(params);
         HttpResponse response = httpClient.execute(request);
-        System.out.println(request);
-        System.out.println(response.getStatusLine().getReasonPhrase());
 
+        HttpEntity entity = response.getEntity();
+        Header encodingHeader = entity.getContentEncoding();
+        Charset encoding = encodingHeader == null ? StandardCharsets.UTF_8 :
+                Charsets.toCharset(encodingHeader.getValue());
+        String result = EntityUtils.toString(entity, StandardCharsets.UTF_8);
+
+        String interactionID = result.substring(result.lastIndexOf("\"interactionID\":\"") + 17, result.lastIndexOf("\"}"));
+        //System.out.println(request);
+        System.out.println(response.getStatusLine().getReasonPhrase());
+        //System.out.println(result);
+        //System.out.println(interactionID);
+
+        return interactionID;
     }
 }
