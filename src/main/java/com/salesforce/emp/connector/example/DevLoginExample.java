@@ -15,6 +15,7 @@ import com.salesforce.emp.connector.LoginHelper;
 import com.salesforce.emp.connector.TopicSubscription;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -51,6 +52,7 @@ import static org.cometd.bayeux.Channel.*;
 public class DevLoginExample {
 
     public static ArrayList<String> listOfPSR = new ArrayList<String>();
+    private static ArrayList<DatabaseRecord> records = new ArrayList<>();
 
     public static void main(String[] argv) throws Throwable {
         if (argv.length < 4 || argv.length > 5) {
@@ -124,6 +126,17 @@ public class DevLoginExample {
             //System.out.println("IF VALUES: " + type + " " + IsPushed);
         }
 
+        if(type.equals("deleted")) {
+            String Id = result.substring(result.lastIndexOf("\"Id\":\"") + 6, result.lastIndexOf("\"}}"));
+            for(DatabaseRecord record : records) {
+                if(record.getPendingServiceRoutingId().equals(Id) ) {
+                    //record.deleteRecord(Id);
+                    //deleteGenericObject(record.getReqest_id());
+                    record.closeConnection();
+                }
+            }
+        }
+
         //Check that our PSR was transferred to agent
         if(type.equals("created") && IsPushed.equals("false")) {
 
@@ -168,7 +181,8 @@ public class DevLoginExample {
         record.connectToDB();
         record.createRecord();
 
-        record.addRequestId(sendRequestToInin());
+        //record.addRequestId(createGenericObject());
+        /*
         String UserId = "";
         Boolean m = true;
         while (m) {
@@ -183,17 +197,17 @@ public class DevLoginExample {
                 }
             }
         }
+        */
 
 
-
-        record.closeConnection();
+        //record.closeConnection();
 
         System.out.println("ROUTING TO AGENT");
 
         final URIBuilder builder = new URIBuilder(instanceUrl);
         builder.setPath("/services/data/v43.0/sobjects/AgentWork");
 
-        String json = "{\"ServiceChannelId\": \"" + listOfPSR.get(0) + "\", \"WorkItemId\": \"" + listOfPSR.get(1) + "\", \"UserId\": \"" + UserId + "\", \"PendingServiceRoutingId\": \"" + listOfPSR.get(2) + "\"}";
+        String json = "{\"ServiceChannelId\": \"" + listOfPSR.get(0) + "\", \"WorkItemId\": \"" + listOfPSR.get(1) + "\", \"UserId\": \"" + "00550000005rV51" + "\", \"PendingServiceRoutingId\": \"" + listOfPSR.get(2) + "\"}";
         System.out.println(json);
         StringEntity entity = new StringEntity(json);
         final HttpPost post = new HttpPost(builder.build());
@@ -211,12 +225,21 @@ public class DevLoginExample {
 
         final JsonNode queryResults = mapper.readValue(queryResponse.getEntity().getContent(), JsonNode.class);
 
-        //System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(queryResults));
+        System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(queryResults));
 
+        String toGetAgentId = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(queryResults);
+
+            String AgentId = toGetAgentId.substring( 12, 30);
+            System.out.println("=================" + AgentId);
+            if(!AgentId.contains("entity")) {
+                record.setAgentWorkId(AgentId);
+                record.updateRecordAgentWorkId(AgentId);
+            }
+        records.add(record);
     }
 
 
-    private static String sendRequestToInin() throws IOException, URISyntaxException {
+    private static String createGenericObject() throws IOException, URISyntaxException {
 
         HttpClient httpClient = HttpClientBuilder.create().build();
         HttpPost request = new HttpPost("https://availability-2.marketlinc.com/WCFService1/CreateGenericObject");
@@ -243,5 +266,23 @@ public class DevLoginExample {
         //System.out.println(interactionID);
 
         return interactionID;
+    }
+
+    private static void deleteGenericObject(String Id) throws IOException {
+        HttpClient httpClient = HttpClientBuilder.create().build();
+        HttpPost request = new HttpPost("https://availability-2.marketlinc.com/WCFService1/DisconnectGenericObject");
+        StringEntity params =new StringEntity("{\n" +
+                "\t\"interactionID\": \"" + Id + "\",\n" +
+                "} ");
+        request.addHeader("Content-Type", "application/json");
+        request.setEntity(params);
+        HttpResponse response = httpClient.execute(request);
+        System.out.println(response.getStatusLine().getReasonPhrase());
+        HttpEntity entity = response.getEntity();
+        Header encodingHeader = entity.getContentEncoding();
+        Charset encoding = encodingHeader == null ? StandardCharsets.UTF_8 :
+                Charsets.toCharset(encodingHeader.getValue());
+        String result = EntityUtils.toString(entity, StandardCharsets.UTF_8);
+        System.out.println(result);
     }
 }

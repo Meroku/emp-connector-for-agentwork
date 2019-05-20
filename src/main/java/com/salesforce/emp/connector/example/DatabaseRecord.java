@@ -10,6 +10,7 @@ public class DatabaseRecord {
     private String QueueId;
     private String UserId = "";
     private String reqest_id = "";
+    private String AgentWorkId = "";
     private String Status;
 
     public Connection connection = null;
@@ -49,12 +50,27 @@ public class DatabaseRecord {
     public void createRecord() {
 
         String insertTableSQL = "INSERT INTO routes"
-                + "(pendingservicerouting, servicechanelid, workitemid, queueid, agent_id, status) " + "VALUES"
-                + "('" + PendingServiceRoutingId + "','" + ServiceChannelId + "','" + WorkItemId + "', '" + QueueId + "', '" + UserId + "', '" + Status + "') ";
+                + "(pendingservicerouting, servicechanelid, workitemid, queueid, agent_id, status, agentworkid) " + "VALUES"
+                + "('" + PendingServiceRoutingId + "','" + ServiceChannelId + "','" + WorkItemId + "', '" + QueueId + "', '" + UserId + "', '" + Status + "', '" + AgentWorkId + "') ";
 
         try {
             statement.executeUpdate(insertTableSQL);
             //System.out.println("Record created successfully!");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+    public void deleteRecord(String Id) {
+
+        String deleteTableSQL = "DELETE FROM routes WHERE pendingservicerouting = \"" + Id + "\"";
+
+        try {
+
+            statement.execute(deleteTableSQL);
+            System.out.println("Record is deleted!");
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -69,7 +85,6 @@ public class DatabaseRecord {
         try {
             statement.execute(updateTableSQL);
             this.UserId = UserId;
-            //System.out.println("Record updated successfully!");
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -116,6 +131,19 @@ public class DatabaseRecord {
         }
     }
 
+    public void updateRecordAgentWorkId(String AgentWorkId) {
+        String updateTableSQL = "UPDATE routes SET agentworkid = '" + AgentWorkId + "' WHERE"
+                + " pendingservicerouting = '" + PendingServiceRoutingId + "' AND servicechanelid = '" + ServiceChannelId + "' AND workitemid = '" + WorkItemId + "' AND agent_id = '" + UserId + "' AND queueid = '" + QueueId + "'";
+
+        try {
+            statement.execute(updateTableSQL);
+            this.Status = Status;
+            //System.out.println("Record updated successfully!");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void closeConnection() {
         try {
             if(connection != null) {
@@ -128,5 +156,21 @@ public class DatabaseRecord {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    public String getPendingServiceRoutingId() {
+        return PendingServiceRoutingId;
+    }
+
+    public String getReqest_id() {
+        return reqest_id;
+    }
+
+    public String getAgentWorkId() {
+        return AgentWorkId;
+    }
+
+    public void setAgentWorkId(String agentWorkId) {
+        AgentWorkId = agentWorkId;
     }
 }

@@ -162,8 +162,8 @@ public class LoginExample {
         record.connectToDB();
         record.createRecord();
 
-        record.addRequestId(sendRequestToInin());
-        String UserId = "";
+        //record.addRequestId(sendRequestToInin());
+        /*String UserId = "";
         Boolean m = true;
         while (m) {
             UserId = record.getUserId();
@@ -177,7 +177,7 @@ public class LoginExample {
                 }
             }
         }
-
+        */
         record.closeConnection();
 
         System.out.println("ROUTING TO AGENT");
@@ -185,7 +185,7 @@ public class LoginExample {
         final URIBuilder builder = new URIBuilder(instanceUrl);
         builder.setPath("/services/data/v43.0/sobjects/AgentWork");
 
-        String json = "{\"ServiceChannelId\": \"" + listOfPSR.get(0) + "\", \"WorkItemId\": \"" + listOfPSR.get(1) + "\", \"UserId\": \"" + UserId + "\", \"PendingServiceRoutingId\": \"" + listOfPSR.get(2) + "\"}";
+        String json = "{\"ServiceChannelId\": \"" + listOfPSR.get(0) + "\", \"WorkItemId\": \"" + listOfPSR.get(1) + "\", \"UserId\": \"" + "0056F000009m5Ps" + "\", \"PendingServiceRoutingId\": \"" + listOfPSR.get(2) + "\"}";
         StringEntity entity = new StringEntity(json);
         final HttpPost post = new HttpPost(builder.build());
         post.setEntity(entity);
